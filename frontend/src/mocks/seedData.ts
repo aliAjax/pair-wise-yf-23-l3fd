@@ -1,133 +1,183 @@
+import type { Fixture } from "../types/Fixture";
+import type { CueScene, FixtureChannelState } from "../types/CueScene";
+import type { TimelineTrack } from "../types/TimelineTrack";
+import { createDefaultFixture } from "../constructors/FixtureConstructor";
+import { createDefaultCueScene } from "../constructors/CueSceneConstructor";
+import { createDefaultTimelineTrack } from "../constructors/TimelineTrackConstructor";
+import { createDefaultShowProject } from "../constructors/ShowProjectConstructor";
+
+const FIXTURE_COUNT = 130;
+const FIXTURE_TYPE_CYCLE = ["PAR", "WASH", "SPOT", "BEAM"] as const;
+const COLOR_MODE_CYCLE = ["RGB", "RGBW", "MOVING_HEAD", "RGBW"] as const;
+
+const fixtures: Fixture[] = Array.from({ length: FIXTURE_COUNT }, (_, index) => {
+  const id = index + 1;
+  const column = index % 13;
+  const row = Math.floor(index / 13);
+  return createDefaultFixture({
+    id,
+    fixture_code: `FIX-${String(id).padStart(3, "0")}`,
+    fixture_type: FIXTURE_TYPE_CYCLE[index % FIXTURE_TYPE_CYCLE.length],
+    position_x: 70 + column * 55,
+    position_y: 70 + row * 90,
+    dmx_address: (index % 128) * 4 + 1,
+    channel_count: 4,
+    color_mode: COLOR_MODE_CYCLE[index % COLOR_MODE_CYCLE.length]
+  });
+});
+
+function rangeIds(start: number, end: number): number[] {
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
+
+function statesFor(
+  ids: number[],
+  build: (fixture: Fixture) => FixtureChannelState
+): Record<number, FixtureChannelState> {
+  return Object.fromEntries(
+    ids.map((id) => {
+      const fixture = fixtures[id - 1];
+      return [id, build(fixture)];
+    })
+  );
+}
+
+const cueScenes: CueScene[] = [
+  createDefaultCueScene({
+    id: 1,
+    name: "开场基础光",
+    fixture_states: statesFor(rangeIds(1, 40), (fixture) => ({
+      dimmer: 170,
+      r: 210,
+      g: 160,
+      b: 90,
+      w: 120,
+      ...(fixture.color_mode === "MOVING_HEAD" ? { pan: 96, tilt: 96 } : {})
+    })),
+    fade_in_ms: 500,
+    hold_ms: 2000,
+    priority: 10,
+    scene_status: "READY"
+  }),
+  createDefaultCueScene({
+    id: 2,
+    name: "满场基础",
+    fixture_states: statesFor(rangeIds(1, 130), (fixture) => ({
+      dimmer: 130,
+      r: 110,
+      g: 140,
+      b: 210,
+      w: 60,
+      ...(fixture.color_mode === "MOVING_HEAD" ? { pan: 64, tilt: 64 } : {})
+    })),
+    fade_in_ms: 800,
+    hold_ms: 1500,
+    priority: 1,
+    scene_status: "READY"
+  }),
+  createDefaultCueScene({
+    id: 3,
+    name: "追光",
+    fixture_states: statesFor(rangeIds(1, 10), (fixture) => ({
+      dimmer: 255,
+      r: 255,
+      g: 245,
+      b: 225,
+      w: 200,
+      ...(fixture.color_mode === "MOVING_HEAD" ? { pan: 128, tilt: 128 } : {})
+    })),
+    fade_in_ms: 300,
+    hold_ms: 3000,
+    priority: 8,
+    scene_status: "READY"
+  }),
+  createDefaultCueScene({
+    id: 4,
+    name: "效果扫描",
+    fixture_states: statesFor(rangeIds(20, 80), (fixture) => ({
+      dimmer: 200,
+      r: 190,
+      g: 90,
+      b: 230,
+      w: 0,
+      ...(fixture.color_mode === "MOVING_HEAD" ? { pan: 100, tilt: 150 } : {})
+    })),
+    fade_in_ms: 600,
+    hold_ms: 1000,
+    priority: 5,
+    scene_status: "READY"
+  })
+];
+
+const SEED_TIMESTAMP = Date.UTC(2026, 9, 1, 9, 0, 0);
+
+const timelineTracks: TimelineTrack[] = [
+  createDefaultTimelineTrack({
+    id: 1,
+    cue_scene_id: 1,
+    start_ms: 0,
+    duration_ms: 20000,
+    layer: "BASE",
+    version: 1,
+    updated_by: "seed",
+    updated_at: SEED_TIMESTAMP
+  }),
+  createDefaultTimelineTrack({
+    id: 2,
+    cue_scene_id: 3,
+    start_ms: 2000,
+    duration_ms: 10000,
+    layer: "SPOT",
+    version: 1,
+    updated_by: "seed",
+    updated_at: SEED_TIMESTAMP
+  }),
+  createDefaultTimelineTrack({
+    id: 3,
+    cue_scene_id: 4,
+    start_ms: 5000,
+    duration_ms: 13000,
+    layer: "EFFECT",
+    version: 1,
+    updated_by: "seed",
+    updated_at: SEED_TIMESTAMP
+  }),
+  createDefaultTimelineTrack({
+    id: 4,
+    cue_scene_id: 2,
+    start_ms: 12000,
+    duration_ms: 14000,
+    layer: "BASE",
+    version: 1,
+    updated_by: "seed",
+    updated_at: SEED_TIMESTAMP
+  }),
+  createDefaultTimelineTrack({
+    id: 5,
+    cue_scene_id: 3,
+    start_ms: 15000,
+    duration_ms: 10000,
+    layer: "SPOT",
+    version: 1,
+    updated_by: "seed",
+    updated_at: SEED_TIMESTAMP
+  })
+];
+
+const showProjects = [
+  createDefaultShowProject({
+    id: 1,
+    title: "秋季演出",
+    venue_name: "主舞台",
+    fixture_ids: fixtures.map((fixture) => fixture.id),
+    track_ids: timelineTracks.map((track) => track.id),
+    updated_at: "2026-10-01T09:00:00Z"
+  })
+];
+
 export const mockData = {
-  "fixture": [
-    {
-      "id": 1,
-      "fixture_code": "fixture code 1",
-      "fixture_type": "SPOT",
-      "position_x": "position x 1",
-      "position_y": "position y 1",
-      "dmx_address": "dmx address 1",
-      "channel_count": "channel count 1",
-      "color_mode": "color mode 1"
-    },
-    {
-      "id": 2,
-      "fixture_code": "fixture code 2",
-      "fixture_type": "WASH",
-      "position_x": "position x 2",
-      "position_y": "position y 2",
-      "dmx_address": "dmx address 2",
-      "channel_count": "channel count 2",
-      "color_mode": "color mode 2"
-    },
-    {
-      "id": 3,
-      "fixture_code": "fixture code 3",
-      "fixture_type": "BEAM",
-      "position_x": "position x 3",
-      "position_y": "position y 3",
-      "dmx_address": "dmx address 3",
-      "channel_count": "channel count 3",
-      "color_mode": "color mode 3"
-    }
-  ],
-  "cueScene": [
-    {
-      "id": 1,
-      "name": "name 1",
-      "fixture_states": "fixture states 1",
-      "fade_in_ms": "fade in ms 1",
-      "hold_ms": "hold ms 1",
-      "priority": "priority 1",
-      "scene_status": "READY"
-    },
-    {
-      "id": 2,
-      "name": "name 2",
-      "fixture_states": "fixture states 2",
-      "fade_in_ms": "fade in ms 2",
-      "hold_ms": "hold ms 2",
-      "priority": "priority 2",
-      "scene_status": "DISABLED"
-    },
-    {
-      "id": 3,
-      "name": "name 3",
-      "fixture_states": "fixture states 3",
-      "fade_in_ms": "fade in ms 3",
-      "hold_ms": "hold ms 3",
-      "priority": "priority 3",
-      "scene_status": "DRAFT"
-    }
-  ],
-  "timelineTrack": [
-    {
-      "id": 1,
-      "cue_scene_id": 1,
-      "start_ms": "start ms 1",
-      "duration_ms": "duration ms 1",
-      "layer": "layer 1",
-      "locked": "locked 1"
-    },
-    {
-      "id": 2,
-      "cue_scene_id": 2,
-      "start_ms": "start ms 2",
-      "duration_ms": "duration ms 2",
-      "layer": "layer 2",
-      "locked": "locked 2"
-    },
-    {
-      "id": 3,
-      "cue_scene_id": 3,
-      "start_ms": "start ms 3",
-      "duration_ms": "duration ms 3",
-      "layer": "layer 3",
-      "locked": "locked 3"
-    }
-  ],
-  "showProject": [
-    {
-      "id": 1,
-      "title": "title 1",
-      "venue_name": "venue name 1",
-      "fixture_ids": [
-        1,
-        2
-      ],
-      "track_ids": [
-        1,
-        2
-      ],
-      "updated_at": "2026-06-11T09:00:00Z"
-    },
-    {
-      "id": 2,
-      "title": "title 2",
-      "venue_name": "venue name 2",
-      "fixture_ids": [
-        1,
-        2
-      ],
-      "track_ids": [
-        1,
-        2
-      ],
-      "updated_at": "2026-06-12T09:00:00Z"
-    },
-    {
-      "id": 3,
-      "title": "title 3",
-      "venue_name": "venue name 3",
-      "fixture_ids": [
-        1,
-        2
-      ],
-      "track_ids": [
-        1,
-        2
-      ],
-      "updated_at": "2026-06-13T09:00:00Z"
-    }
-  ]
+  fixture: fixtures,
+  cueScene: cueScenes,
+  timelineTrack: timelineTracks,
+  showProject: showProjects
 } as const;

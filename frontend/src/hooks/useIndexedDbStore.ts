@@ -1,8 +1,33 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { idbGet, idbSet } from "../utils/idb";
 
-export function useIndexedDbStore<T>(rows: T[] = []) {
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
-  const pageRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
-  return { page, setPage, pageSize, pageRows, total: rows.length };
+/**
+ * Persistent state backed by IndexedDB with a seed fallback.
+ * Used for local UI state (e.g. selected track) that should survive reloads.
+ */
+export function useIndexedDbStore<T>(key: string, seedValue: T) {
+  const [value, setValue] = useState<T>(seedValue);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    idbGet<T>(key)
+      .then((stored) => {
+        if (alive && stored !== undefined) setValue(stored);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+
+  const persist = (next: T) => {
+    setValue(next);
+    void idbSet(key, next).catch(() => {
+      /* IndexedDB unavailable: keep session-only state */
+    });
+  };
+
+  return { value, setValue: persist, loaded };
 }
