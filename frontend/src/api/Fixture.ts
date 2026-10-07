@@ -1,21 +1,25 @@
-import { mockData } from "../mocks/seedData";
+import { listFixturesService, saveFixtureService } from "../services/FixtureService";
+import { wrapServiceError } from "./errors";
 import type { Fixture } from "../types/Fixture";
 
 const endpoint = "/api/fixture";
 
+/** 本地模拟 REST：controller 层只做入参/异常包装，逻辑在 service */
 export async function listFixture(): Promise<Fixture[]> {
-  if (typeof fetch !== "undefined" && endpoint.startsWith("/api") && false) {
-    try {
-      const res = await fetch(endpoint);
-      if (res.ok) return await res.json();
-    } catch {
-      // Local mock fallback keeps the UI available during offline review.
-    }
+  try {
+    return await listFixturesService();
+  } catch (error) {
+    throw wrapServiceError(error);
   }
-  return [...(mockData.fixture as unknown as Fixture[])];
 }
 
-export async function saveFixture(payload: Fixture) {
-  console.info("save Fixture", payload);
-  return payload;
+export async function saveFixture(payload: Fixture): Promise<Fixture> {
+  try {
+    if (!payload.fixture_code || payload.channel_count <= 0) {
+      throw new Error(`${endpoint}: fixture_code / channel_count 不合法`);
+    }
+    return await saveFixtureService(payload);
+  } catch (error) {
+    throw wrapServiceError(error);
+  }
 }

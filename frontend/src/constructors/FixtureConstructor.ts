@@ -1,16 +1,23 @@
 import type { Fixture } from "../types/Fixture";
+import type { FixtureType } from "../constants/FixtureType";
+import type { ChannelMode } from "../constants/ChannelMode";
 
-export const createDefaultFixture = (overrides: Partial<Fixture> = {}): Fixture => ({
-  id: 1 as never,
-  fixture_code: "fixture code 1" as never,
-  fixture_type: "SPOT" as never,
-  position_x: "position x 1" as never,
-  position_y: "position y 1" as never,
-  dmx_address: "dmx address 1" as never,
-  channel_count: "channel count 1" as never,
-  color_mode: "color mode 1" as never,
-  ...overrides
-});
+let seq = 1000;
+
+/** 新建灯具的默认对象（表单初始值） */
+export function createDefaultFixture(overrides: Partial<Fixture> = {}): Fixture {
+  return {
+    id: --seq,
+    fixture_code: "NEW-FIX",
+    fixture_type: "PAR" as FixtureType,
+    position_x: 50,
+    position_y: 50,
+    dmx_address: 1,
+    channel_count: 3,
+    color_mode: "RGB" as ChannelMode,
+    ...overrides
+  };
+}
 
 export const createFixtureForm = createDefaultFixture;
 export const createFixtureResponse = createDefaultFixture;

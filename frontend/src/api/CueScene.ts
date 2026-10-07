@@ -1,21 +1,22 @@
-import { mockData } from "../mocks/seedData";
+import { listCueScenesService, saveCueSceneService } from "../services/CueSceneService";
+import { wrapServiceError } from "./errors";
 import type { CueScene } from "../types/CueScene";
 
 const endpoint = "/api/cue-scene";
 
 export async function listCueScene(): Promise<CueScene[]> {
-  if (typeof fetch !== "undefined" && endpoint.startsWith("/api") && false) {
-    try {
-      const res = await fetch(endpoint);
-      if (res.ok) return await res.json();
-    } catch {
-      // Local mock fallback keeps the UI available during offline review.
-    }
+  try {
+    return await listCueScenesService();
+  } catch (error) {
+    throw wrapServiceError(error);
   }
-  return [...(mockData.cueScene as unknown as CueScene[])];
 }
 
-export async function saveCueScene(payload: CueScene) {
-  console.info("save CueScene", payload);
-  return payload;
+export async function saveCueScene(payload: CueScene): Promise<CueScene> {
+  try {
+    if (!payload.name) throw new Error(`${endpoint}: name 不能为空`);
+    return await saveCueSceneService(payload);
+  } catch (error) {
+    throw wrapServiceError(error);
+  }
 }

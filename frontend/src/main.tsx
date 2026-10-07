@@ -1,54 +1,69 @@
-import React, { useMemo, useState } from "react";
+import { Provider } from "react-redux";
 import { createRoot } from "react-dom/client";
+import { store } from "./stores/store";
 import { routes } from "./router/routes";
-import { mockData } from "./mocks/seedData";
-import { StatusBadge } from "./components/common/StatusBadge";
-import { StatCard } from "./components/common/StatCard";
+import { useHashRoute } from "./router/useHashRoute";
+import { useIndexedDbStore } from "./hooks/useIndexedDbStore";
+import { FixturesPage } from "./pages/FixturesPage";
+import { CuesPage } from "./pages/CuesPage";
+import { TimelinePage } from "./pages/TimelinePage";
+import { PreviewPage } from "./pages/PreviewPage";
 import "./styles.css";
 
-function Page({ name }: { name: string }) {
-  const entities = Object.entries(mockData);
-  const total = useMemo(() => entities.reduce((sum, [, rows]) => sum + rows.length, 0), [entities]);
-  return <main className="page">
-    <section className="page-head">
-      <div>
-        <p className="eyebrow">stage-light</p>
-        <h1>{name}</h1>
-      </div>
-      <StatusBadge value="LOCAL_DATA" />
-    </section>
-    <section className="metrics">
-      <StatCard label="核心模型" value={entities.length} />
-      <StatCard label="本地记录" value={total} />
-      <StatCard label="共享枚举" value={3} />
-    </section>
-    <section className="workbench">
-      <div className="panel wide">
-        <h2>业务数据</h2>
-        <div className="table">
-          {entities.map(([key, rows]) => <article key={key} className="row">
-            <strong>{key}</strong><span>{rows.length} 条</span><StatusBadge value={Object.values(rows[0] ?? {})[1] as string ?? "READY"} />
-          </article>)}
+function Shell() {
+  useIndexedDbStore();
+  const [active, navigate] = useHashRoute();
+
+  return (
+    <div className="flex min-h-screen bg-stage-bg text-stage-paper">
+      <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r-4 border-stage-gold bg-[#1c2820] p-5">
+        <div className="mb-6 text-lg font-extrabold leading-tight">
+          舞台灯光
+          <br />
+          编排模拟器
         </div>
-      </div>
-      <div className="panel">
-        <h2>联动检查</h2>
-        <p>页面、store、API、构造器、日志模板和枚举常量均按提示词拆分，适合评审跨文件修改能力。</p>
-      </div>
-    </section>
-  </main>;
+        <nav className="grid gap-1">
+          {routes.map((route) => (
+            <button
+              key={route.route}
+              type="button"
+              onClick={() => navigate(route.route)}
+              className={`rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                active === route.route ? "bg-stage-paper font-bold text-[#1c2820]" : "text-[#b9c2b3] hover:bg-white/10"
+              }`}
+            >
+              {route.name}
+            </button>
+          ))}
+        </nav>
+        <p className="mt-auto text-[10px] leading-relaxed text-[#6f7a6b]">
+          数据保存在浏览器 IndexedDB
+          <br />
+          stage-light · v1
+        </p>
+      </aside>
+      <main className="min-w-0 flex-1 p-6">{renderPage(active)}</main>
+    </div>
+  );
 }
 
-function App() {
-  const [active, setActive] = useState<string>(routes[0]?.route ?? "/dashboard");
-  const current = routes.find((route) => route.route === active) ?? routes[0];
-  return <div className="shell">
-    <aside>
-      <div className="brand">舞台灯光编排模拟器</div>
-      <nav>{routes.map((route) => <button key={route.route} className={active === route.route ? "active" : ""} onClick={() => setActive(route.route)}>{route.name}</button>)}</nav>
-    </aside>
-    <Page name={current?.name ?? "工作台"} />
-  </div>;
+function renderPage(route: string) {
+  switch (route) {
+    case "/fixtures":
+      return <FixturesPage />;
+    case "/cues":
+      return <CuesPage />;
+    case "/timeline":
+      return <TimelinePage />;
+    case "/preview":
+      return <PreviewPage />;
+    default:
+      return <TimelinePage />;
+  }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <Provider store={store}>
+    <Shell />
+  </Provider>
+);

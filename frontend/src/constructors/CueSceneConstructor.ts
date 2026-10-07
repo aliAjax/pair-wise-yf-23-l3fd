@@ -1,15 +1,20 @@
 import type { CueScene } from "../types/CueScene";
 
-export const createDefaultCueScene = (overrides: Partial<CueScene> = {}): CueScene => ({
-  id: 1 as never,
-  name: "name 1" as never,
-  fixture_states: "fixture states 1" as never,
-  fade_in_ms: "fade in ms 1" as never,
-  hold_ms: "hold ms 1" as never,
-  priority: "priority 1" as never,
-  scene_status: "READY" as never,
-  ...overrides
-});
+let seq = 1000;
+
+/** 新建场景的默认对象（表单初始值） */
+export function createDefaultCueScene(overrides: Partial<CueScene> = {}): CueScene {
+  return {
+    id: --seq,
+    name: "未命名场景",
+    fixture_states: {},
+    fade_in_ms: 500,
+    hold_ms: 4000,
+    priority: 50,
+    scene_status: "DRAFT",
+    ...overrides
+  };
+}
 
 export const createCueSceneForm = createDefaultCueScene;
 export const createCueSceneResponse = createDefaultCueScene;

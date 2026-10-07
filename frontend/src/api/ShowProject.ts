@@ -1,21 +1,22 @@
-import { mockData } from "../mocks/seedData";
+import { listShowProjectsService, saveShowProjectService } from "../services/ShowProjectService";
+import { wrapServiceError } from "./errors";
 import type { ShowProject } from "../types/ShowProject";
 
 const endpoint = "/api/show-project";
 
 export async function listShowProject(): Promise<ShowProject[]> {
-  if (typeof fetch !== "undefined" && endpoint.startsWith("/api") && false) {
-    try {
-      const res = await fetch(endpoint);
-      if (res.ok) return await res.json();
-    } catch {
-      // Local mock fallback keeps the UI available during offline review.
-    }
+  try {
+    return await listShowProjectsService();
+  } catch (error) {
+    throw wrapServiceError(error);
   }
-  return [...(mockData.showProject as unknown as ShowProject[])];
 }
 
-export async function saveShowProject(payload: ShowProject) {
-  console.info("save ShowProject", payload);
-  return payload;
+export async function saveShowProject(payload: ShowProject): Promise<ShowProject> {
+  try {
+    if (!payload.title) throw new Error(`${endpoint}: title 不能为空`);
+    return await saveShowProjectService(payload);
+  } catch (error) {
+    throw wrapServiceError(error);
+  }
 }
